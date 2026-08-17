@@ -1,9 +1,12 @@
+import random
+
 from rest_framework import generics, permissions, status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Comment, Post
+from .models import Comment, ConfirmationCode, Post
 from .pagination import PostPagination
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (
@@ -12,6 +15,8 @@ from .serializers import (
     PostCreateUpdateSerializer,
     PostDetailSerializer,
     PostListSerializer,
+    UserConfirmSerializer,
+    UserRegisterSerializer,
 )
 
 
@@ -23,8 +28,45 @@ class CustomAuthToken(ObtainAuthToken):
         )
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+        if not user.is_active:
+            return Response(
+                {'detail': 'Пользователь не подтверждён'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         token, _ = Token.objects.get_or_create(user=user)
         return Response({'token': token.key})
+
+
+class UserRegisterAPIView(generics.CreateAPIView):
+    serializer_class = UserRegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        code = f'{random.randint(0, 999999):06d}'
+        ConfirmationCode.objects.create(user=user, code=code)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(
+            {'message': 'Пользователь зарегистрирован. Подтвердите аккаунт кодом из 6 цифр.'},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class UserConfirmAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = UserConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        user.confirmation_code.delete()
+        return Response({'message': 'Пользователь успешно подтверждён'})
 
 
 class PostListCreateAPIView(generics.ListCreateAPIView):

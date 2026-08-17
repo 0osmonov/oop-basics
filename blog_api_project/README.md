@@ -36,6 +36,36 @@ API доступно по адресу: `http://127.0.0.1:8000/api/v1/`
 - Swagger UI: `http://127.0.0.1:8000/api/docs/`
 - OpenAPI schema: `http://127.0.0.1:8000/api/schema/`
 
+## Регистрация и подтверждение
+
+**Регистрация:**
+
+```bash
+POST /api/v1/users/register/
+Content-Type: application/json
+
+{
+  "username": "your_username",
+  "password": "your_password"
+}
+```
+
+После регистрации пользователь создаётся с `is_active=False`. Генерируется случайный 6-значный код и сохраняется в БД (связь 1:1 с пользователем).
+
+**Подтверждение:**
+
+```bash
+POST /api/v1/users/confirm/
+Content-Type: application/json
+
+{
+  "username": "your_username",
+  "code": "123456"
+}
+```
+
+После подтверждения `is_active` становится `True`, и пользователь может авторизоваться.
+
 ## Аутентификация
 
 Используется Token Authentication.
@@ -62,6 +92,9 @@ Authorization: Token <your_token>
 
 | Метод | URL | Описание | Доступ |
 |-------|-----|----------|--------|
+| POST | `/api/v1/users/register/` | Регистрация | Все |
+| POST | `/api/v1/users/confirm/` | Подтверждение пользователя | Все |
+| POST | `/api/v1/auth/token/` | Авторизация (получить токен) | Подтверждённые пользователи |
 | GET | `/api/v1/posts/` | Список постов (пагинация) | Гость — только опубликованные |
 | POST | `/api/v1/posts/` | Создать пост | Только авторизованные |
 | GET | `/api/v1/posts/{id}/` | Детали поста | Гость — только опубликованные |
@@ -75,6 +108,7 @@ Authorization: Token <your_token>
 ## Модели
 
 - **User** — стандартная модель Django (django.contrib.auth)
+- **ConfirmationCode** — user (OneToOne), code (6 цифр)
 - **Post** — author, title, body, created_at, updated_at, is_published
 - **Comment** — post, author, body, created_at, updated_at, is_approved
 

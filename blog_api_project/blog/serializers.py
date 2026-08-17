@@ -1,13 +1,62 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Comment, Post
+from .models import Comment, ConfirmationCode, Post
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username']
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=6)
+
+    class Meta:
+        model = User
+        fields = ['username', 'password']
+
+    def validate_username(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Имя пользователя не может быть пустым')
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('Пользователь с таким именем уже существует')
+        return value
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password'],
+            is_active=False,
+        )
+        return user
+
+
+class UserConfirmSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    code = serializers.CharField(min_length=6, max_length=6)
+
+    def validate(self, data):
+        try:
+            user = User.objects.get(username=data['username'])
+        except User.DoesNotExist:
+            raise serializers.ValidationError({'username': 'Пользователь не найден'})
+
+        if user.is_active:
+            raise serializers.ValidationError({'username': 'Пользователь уже подтверждён'})
+
+        try:
+            confirmation = user.confirmation_code
+        except ConfirmationCode.DoesNotExist:
+            raise serializers.ValidationError({'code': 'Код подтверждения не найден'})
+
+        if confirmation.code != data['code']:
+            raise serializers.ValidationError({'code': 'Неверный код подтверждения'})
+
+        data['user'] = user
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
