@@ -4,7 +4,6 @@ from rest_framework import generics, permissions, status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from .models import Comment, ConfirmationCode, Post
 from .pagination import PostPagination
@@ -56,11 +55,12 @@ class UserRegisterAPIView(generics.CreateAPIView):
         )
 
 
-class UserConfirmAPIView(APIView):
+class UserConfirmAPIView(generics.CreateAPIView):
+    serializer_class = UserConfirmSerializer
     permission_classes = [permissions.AllowAny]
 
-    def post(self, request):
-        serializer = UserConfirmSerializer(data=request.data)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         user.is_active = True
