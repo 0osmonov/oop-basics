@@ -47,6 +47,24 @@ python manage.py runserver
 
 API доступно по адресу: `http://127.0.0.1:8000/api/v1/`
 
+## Docker
+
+### Запуск через Docker Compose
+
+```bash
+cd blog_api_project
+docker compose up --build
+```
+
+После запуска:
+- API: `http://127.0.0.1:8000/api/v1/`
+- Swagger: `http://127.0.0.1:8000/api/docs/`
+
+Остановить:
+```bash
+docker compose down
+```
+
 ## Документация
 
 - Swagger UI: `http://127.0.0.1:8000/api/docs/`
