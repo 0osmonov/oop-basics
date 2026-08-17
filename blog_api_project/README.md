@@ -11,19 +11,35 @@ cd blog_api_project
 pip install -r requirements.txt
 ```
 
-### 2. Применить миграции
+### 2. Настроить PostgreSQL
+
+Создайте базу данных в PostgreSQL:
+
+```sql
+CREATE DATABASE blog_db;
+```
+
+Скопируйте файл окружения и укажите свои данные:
+
+```bash
+cp .env.example .env
+```
+
+В `.env` хранятся `SECRET_KEY` и параметры подключения к PostgreSQL.
+
+### 3. Применить миграции
 
 ```bash
 python manage.py migrate
 ```
 
-### 3. Создать пользователя
+### 4. Создать пользователя
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 4. Запустить сервер
+### 5. Запустить сервер
 
 ```bash
 python manage.py runserver
