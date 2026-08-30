@@ -1,7 +1,8 @@
 from django.db.models import Avg, Count
-from rest_framework import generics
+from rest_framework import generics, permissions
 
 from .models import Category, Product, Review
+from .permissions import IsModerator, IsProductOwner
 from .serializers import (
     CategorySerializer,
     ProductSerializer,
@@ -22,14 +23,23 @@ class CategoryDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ProductListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.select_related('author', 'category')
     serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsModerator]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class ProductDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.select_related('author', 'category')
     serializer_class = ProductSerializer
     lookup_field = 'id'
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly,
+        IsModerator,
+        IsProductOwner,
+    ]
 
 
 class ProductReviewsListAPIView(generics.ListAPIView):

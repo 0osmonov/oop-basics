@@ -39,6 +39,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+        read_only_fields = ['author']
 
     def validate_title(self, value):
         value = value.strip()
