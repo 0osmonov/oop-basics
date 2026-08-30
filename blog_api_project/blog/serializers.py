@@ -1,51 +1,84 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
-from .models import Comment, ConfirmationCode, Post
+from .models import Comment, ConfirmationCode, Post, validate_phone_number
+
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username']
+        fields = ['id', 'email', 'phone_number']
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(
+        write_only=True,
+        min_length=6,
+        style={'input_type': 'password'},
+    )
+    email = serializers.EmailField()
 
     class Meta:
         model = User
-        fields = ['username', 'password']
+        fields = ['email', 'password']
 
-    def validate_username(self, value):
-        value = value.strip()
-        if not value:
-            raise serializers.ValidationError('Имя пользователя не может быть пустым')
-        if User.objects.filter(username__iexact=value).exists():
-            raise serializers.ValidationError('Пользователь с таким именем уже существует')
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('Пользователь с таким email уже существует')
         return value
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data['username'],
+        return User.objects.create_user(
+            email=validated_data['email'],
             password=validated_data['password'],
             is_active=False,
         )
-        return user
+
+
+class UserLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(label='Email')
+    password = serializers.CharField(
+        label='Password',
+        style={'input_type': 'password'},
+        trim_whitespace=False,
+        write_only=True,
+    )
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if not email or not password:
+            raise serializers.ValidationError('Email и пароль обязательны')
+
+        user = authenticate(
+            request=self.context.get('request'),
+            username=email,
+            password=password,
+        )
+
+        if not user:
+            raise serializers.ValidationError('Неверный email или пароль')
+
+        attrs['user'] = user
+        return attrs
 
 
 class UserConfirmSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    email = serializers.EmailField()
     code = serializers.CharField(min_length=6, max_length=6)
 
     def validate(self, data):
         try:
-            user = User.objects.get(username=data['username'])
+            user = User.objects.get(email__iexact=data['email'])
         except User.DoesNotExist:
-            raise serializers.ValidationError({'username': 'Пользователь не найден'})
+            raise serializers.ValidationError({'email': 'Пользователь не найден'})
 
         if user.is_active:
-            raise serializers.ValidationError({'username': 'Пользователь уже подтверждён'})
+            raise serializers.ValidationError({'email': 'Пользователь уже подтверждён'})
 
         try:
             confirmation = user.confirmation_code

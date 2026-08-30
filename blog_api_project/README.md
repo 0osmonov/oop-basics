@@ -79,7 +79,7 @@ POST /api/v1/users/register/
 Content-Type: application/json
 
 {
-  "username": "your_username",
+  "email": "user@example.com",
   "password": "your_password"
 }
 ```
@@ -93,7 +93,7 @@ POST /api/v1/users/confirm/
 Content-Type: application/json
 
 {
-  "username": "your_username",
+  "email": "user@example.com",
   "code": "123456"
 }
 ```
@@ -111,7 +111,7 @@ POST /api/v1/auth/token/
 Content-Type: application/json
 
 {
-  "username": "your_username",
+  "email": "your_email@example.com",
   "password": "your_password"
 }
 ```
@@ -141,7 +141,7 @@ Authorization: Token <your_token>
 
 ## Модели
 
-- **User** — стандартная модель Django (django.contrib.auth)
+- **CustomUser** — email (логин), phone_number, AbstractBaseUser + PermissionsMixin
 - **ConfirmationCode** — user (OneToOne), code (6 цифр)
 - **Post** — author, title, body, created_at, updated_at, is_published
 - **Comment** — post, author, body, created_at, updated_at, is_approved

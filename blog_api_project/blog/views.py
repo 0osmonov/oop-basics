@@ -15,11 +15,14 @@ from .serializers import (
     PostDetailSerializer,
     PostListSerializer,
     UserConfirmSerializer,
+    UserLoginSerializer,
     UserRegisterSerializer,
 )
 
 
 class CustomAuthToken(ObtainAuthToken):
+    serializer_class = UserLoginSerializer
+
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(
             data=request.data,
