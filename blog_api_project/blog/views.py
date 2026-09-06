@@ -19,6 +19,7 @@ from .serializers import (
     UserLoginSerializer,
     UserRegisterSerializer,
 )
+from .tasks import log_user_registered, send_confirmation_email
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -48,6 +49,10 @@ class UserRegisterAPIView(generics.CreateAPIView):
         user = serializer.save()
         code = f'{random.randint(0, 999999):06d}'
         save_confirmation_code(user.email, code)
+        # Пример Celery .delay()
+        log_user_registered.delay(user.email)
+        # Пример Celery + SMTP
+        send_confirmation_email.delay(user.email, code)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

@@ -65,6 +65,33 @@ docker compose up --build
 docker compose down
 ```
 
+## Celery
+
+В проекте 3 примера задач:
+
+| Тип | Задача | Как вызывается |
+|-----|--------|----------------|
+| `.delay()` | `log_user_registered` | при регистрации |
+| `crontab` | `cleanup_unpublished_posts` | каждый день в 03:00 (Celery Beat) |
+| `SMTP` | `send_confirmation_email` | при регистрации через `.delay()` |
+
+### Запуск локально
+
+```bash
+# терминал 1
+python manage.py runserver
+
+# терминал 2
+celery -A blog_api worker -l info
+
+# терминал 3
+celery -A blog_api beat -l info
+```
+
+Через Docker Compose worker и beat поднимаются вместе с `web`.
+
+Для реальной отправки писем укажите SMTP в `.env` (`EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend` и данные почты).
+
 ## Документация
 
 - Swagger UI: `http://127.0.0.1:8000/api/docs/`
