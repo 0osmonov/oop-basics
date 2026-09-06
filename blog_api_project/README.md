@@ -84,7 +84,7 @@ Content-Type: application/json
 }
 ```
 
-После регистрации пользователь создаётся с `is_active=False`. Генерируется случайный 6-значный код и сохраняется в БД (связь 1:1 с пользователем).
+После регистрации пользователь создаётся с `is_active=False`. Генерируется случайный 6-значный код и сохраняется в **Redis** с TTL **5 минут** (не в модели ConfirmationCode).
 
 **Подтверждение:**
 
@@ -98,7 +98,7 @@ Content-Type: application/json
 }
 ```
 
-После подтверждения `is_active` становится `True`, и пользователь может авторизоваться.
+После успешного подтверждения код **удаляется из Redis**, `is_active` становится `True`.
 
 ## Аутентификация
 
@@ -142,7 +142,7 @@ Authorization: Token <your_token>
 ## Модели
 
 - **CustomUser** — email (логин), phone_number, AbstractBaseUser + PermissionsMixin
-- **ConfirmationCode** — user (OneToOne), code (6 цифр)
+- **Код подтверждения** — хранится в Redis (TTL 5 минут), не в БД
 - **Post** — author, title, body, created_at, updated_at, is_published
 - **Comment** — post, author, body, created_at, updated_at, is_approved
 

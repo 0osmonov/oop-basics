@@ -1,7 +1,8 @@
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
-from .models import Comment, ConfirmationCode, Post, validate_phone_number
+from .models import Comment, Post
+from .redis_client import get_confirmation_code
 
 User = get_user_model()
 
@@ -72,23 +73,26 @@ class UserConfirmSerializer(serializers.Serializer):
     code = serializers.CharField(min_length=6, max_length=6)
 
     def validate(self, data):
+        email = data['email'].strip().lower()
         try:
-            user = User.objects.get(email__iexact=data['email'])
+            user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
             raise serializers.ValidationError({'email': 'Пользователь не найден'})
 
         if user.is_active:
             raise serializers.ValidationError({'email': 'Пользователь уже подтверждён'})
 
-        try:
-            confirmation = user.confirmation_code
-        except ConfirmationCode.DoesNotExist:
-            raise serializers.ValidationError({'code': 'Код подтверждения не найден'})
+        stored_code = get_confirmation_code(email)
+        if not stored_code:
+            raise serializers.ValidationError(
+                {'code': 'Код подтверждения не найден или истёк (TTL 5 минут)'},
+            )
 
-        if confirmation.code != data['code']:
+        if stored_code != data['code']:
             raise serializers.ValidationError({'code': 'Неверный код подтверждения'})
 
         data['user'] = user
+        data['email'] = email
         return data
 
 

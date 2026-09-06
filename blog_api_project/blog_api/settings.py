@@ -118,3 +118,5 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'REST API для простого блога',
     'VERSION': '1.0.0',
 }
+
+REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')

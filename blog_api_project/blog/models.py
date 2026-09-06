@@ -74,6 +74,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 class ConfirmationCode(models.Model):
+    """Устарело: коды подтверждения теперь хранятся в Redis (TTL 5 минут)."""
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

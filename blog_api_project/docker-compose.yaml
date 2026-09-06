@@ -11,6 +11,12 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7
+    container_name: blog_redis
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     container_name: blog_api
@@ -21,6 +27,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     environment:
       SECRET_KEY: django-insecure-docker-secret-key
       DEBUG: "True"
@@ -29,6 +36,7 @@ services:
       DB_PASSWORD: postgres
       DB_HOST: db
       DB_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
       ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0
 
 volumes:

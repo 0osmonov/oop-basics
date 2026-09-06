@@ -5,9 +5,10 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 
-from .models import Comment, ConfirmationCode, Post
+from .models import Comment, Post
 from .pagination import PostPagination
 from .permissions import IsAuthorOrReadOnly
+from .redis_client import delete_confirmation_code, save_confirmation_code
 from .serializers import (
     CommentCreateUpdateSerializer,
     CommentSerializer,
@@ -46,7 +47,7 @@ class UserRegisterAPIView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
         code = f'{random.randint(0, 999999):06d}'
-        ConfirmationCode.objects.create(user=user, code=code)
+        save_confirmation_code(user.email, code)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -66,9 +67,10 @@ class UserConfirmAPIView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+        email = serializer.validated_data['email']
         user.is_active = True
         user.save(update_fields=['is_active'])
-        user.confirmation_code.delete()
+        delete_confirmation_code(email)
         return Response({'message': 'Пользователь успешно подтверждён'})
 
 
