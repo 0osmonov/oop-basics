@@ -2,16 +2,23 @@
 Django settings for shop_api project.
 """
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
-SECRET_KEY = 'django-insecure-yu+0!!nf88)l0ms-d^+t@i4$zlho^io*$_wo3k!k&8i&wy!#f_'
+SECRET_KEY = os.getenv(
+    'SECRET_KEY',
+    'django-insecure-yu+0!!nf88)l0ms-d^+t@i4$zlho^io*$_wo3k!k&8i&wy!#f_',
+)
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -103,3 +110,11 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
+
+# Google OAuth 2.0 (ручная реализация, без social-auth / allauth)
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_REDIRECT_URI = os.getenv(
+    'GOOGLE_REDIRECT_URI',
+    'http://127.0.0.1:8000/api/v1/auth/google/callback/',
+)
