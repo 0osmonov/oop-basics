@@ -1,5 +1,7 @@
 from rest_framework import permissions
 
+from common.validators import validate_product_creator_age
+
 
 class IsModerator(permissions.BasePermission):
     message = 'Модератор не может создавать товары'
@@ -33,3 +35,29 @@ class IsProductOwner(permissions.BasePermission):
         if not user.is_authenticated:
             return False
         return obj.author == user
+
+
+class IsAdultToCreateProduct(permissions.BasePermission):
+    """Проверяет возраст пользователя при создании Product по birthdate из JWT."""
+
+    def has_permission(self, request, view):
+        if request.method != 'POST':
+            return True
+
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        birthdate = None
+        token = getattr(request, 'auth', None)
+        if token is not None:
+            try:
+                birthdate = token['birthdate']
+            except (KeyError, TypeError):
+                birthdate = token.payload.get('birthdate') if hasattr(token, 'payload') else None
+
+        # если в токене нет — берём из пользователя (fallback)
+        if birthdate is None and hasattr(request.user, 'birthdate'):
+            birthdate = request.user.birthdate
+
+        validate_product_creator_age(birthdate)
+        return True
